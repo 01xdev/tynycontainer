@@ -15,9 +15,9 @@ public class SimpleBeanFactory implements BeanFactory{
         Bean bean = new Bean(instance);
         beanContainer.put(name, bean);
     }
-    public Object getBean(String beanName) {
+    public Bean getBean(String beanName) {
        Bean bean = Optional.ofNullable(beanContainer.get(beanName))
                .orElseThrow(()->new RuntimeException("Bean not found"));
-       return bean.instance;
+       return bean;
     }
 }

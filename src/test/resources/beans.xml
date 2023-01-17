@@ -1,5 +1,7 @@
 <?xml version="1.0" ?>
 <Beans>
-    <Bean name="UserService" classname="in.onexdev.testScenarios.UserService" />
     <Bean name="UserRepository" classname="in.onexdev.testScenarios.UserRepository" />
+    <Bean name="UserService" classname="in.onexdev.testScenarios.UserService">
+        <setter name="setUserRepository" bean="UserRepository"/>
+    </Bean>
 </Beans>

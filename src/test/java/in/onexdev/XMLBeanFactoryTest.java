@@ -14,14 +14,12 @@ public class XMLBeanFactoryTest {
     @Before
     public void configure(){
         beanFactory = new XMLBeanFactory("beans.xml");
-        UserRepository userRepository = (UserRepository) beanFactory.getBean("UserRepository");
-        UserService userService = (UserService)beanFactory.getBean("UserService");
-        userService.setUserRepository(userRepository);
     }
 
     @Test
     public void testUserService() {
-        UserService userService = (UserService) beanFactory.getBean("UserService");
+        beanFactory = XMLBeanFactory.getInstance();
+        UserService userService = (UserService) beanFactory.getBean("UserService").instance;
         User userDetails = userService.getUserDetails(10L);
         assertEquals(userDetails.getAge(), 25);
     }
