@@ -1,0 +1,8 @@
+<Beans>
+    <Bean name="UserRepository" classname="in.onexdev.testScenarios.contructorinjection.UserRepository" />
+    <Bean name="UserService" classname="in.onexdev.testScenarios.contructorinjection.UserService">
+        <constructor>
+            <arg name="userRepository" bean="UserRepository"/>
+        </constructor>
+    </Bean>
+</Beans>

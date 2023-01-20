@@ -9,6 +9,8 @@ import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 
 public class XMLBeanFactory implements BeanFactory {
 
@@ -46,11 +48,67 @@ public class XMLBeanFactory implements BeanFactory {
             Node beanNode = beanNodes.item(i);
             NamedNodeMap attributes = beanNode.getAttributes();
             String classname = attributes.getNamedItem("classname").getTextContent();
-            Object instance = Class.forName(classname).getConstructor().newInstance();
+            Object instance = initializeBean(classname,beanNode);
             injectSetterDependencies(instance, beanNode);
             String beanName = attributes.getNamedItem("name").getTextContent();
             simpleBeanFactory.registerBean(beanName,instance);
         }
+    }
+
+    private  Object initializeBean(String classname, Node beanNode) throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException {
+        NodeList constructorNodes = ((Element)beanNode).getElementsByTagName("constructor");
+        Object beanInstance;
+
+        if(constructorNodes.getLength() == 0)
+            beanInstance =  Class.forName(classname).getConstructor().newInstance();
+        else if(constructorNodes.getLength() > 1)
+            throw new RuntimeException("Class has more than one constructor");
+        else
+            beanInstance = instantiateClassUsingConstructor(classname, constructorNodes);
+
+        return beanInstance;
+    }
+
+    private Object instantiateClassUsingConstructor(String classname, NodeList constructorNodes) throws InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException {
+        Object beanInstance;
+        Node contructorNode = constructorNodes.item(0);
+        NodeList argumentNodes = ((Element)contructorNode).getElementsByTagName("arg");
+        List<Bean> argumentBeans = getArgumentBeansOfConstructor(argumentNodes);
+
+        Class[] parameterTypes = getTypesOfArguments(argumentBeans);
+        Object[] arguments = getArguments(argumentBeans);
+        beanInstance = Class.forName(classname).getConstructor(parameterTypes).newInstance(arguments);
+
+        return beanInstance;
+    }
+
+    private Object[] getArguments(List<Bean> argumentBeans) {
+        Object[] arguments = argumentBeans.stream()
+                .map(argumentBean -> argumentBean.instance)
+                .toArray();
+        return arguments;
+    }
+
+    private  Class[] getTypesOfArguments(List<Bean> argumentBeans) {
+        return argumentBeans.stream()
+                .map(argumentBean -> {
+                    try {
+                        return Class.forName(argumentBean.className);
+                    } catch (ClassNotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).toArray(Class[]::new);
+    }
+
+    private List<Bean> getArgumentBeansOfConstructor(NodeList argumentNodes) {
+        List<Bean> argumentBeans = new ArrayList();
+        for(int i = 0; i< argumentNodes.getLength(); i++){
+            Node argumentNode = argumentNodes.item(i);
+            String beanName = argumentNode.getAttributes().getNamedItem("bean").getTextContent();
+            Bean bean = simpleBeanFactory.getBean(beanName);
+            argumentBeans.add(bean);
+        }
+        return argumentBeans;
     }
 
     private  void injectSetterDependencies(Object instance, Node beanNode) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, ClassNotFoundException {
